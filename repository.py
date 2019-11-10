@@ -3,6 +3,7 @@ import os
 from student import Student
 from instructor import Instructor
 from prettytable import PrettyTable
+from major import Major
 
 class Repository:
     """Repository class which contains details for a particular university like Stevens/NYU etc """
@@ -11,11 +12,13 @@ class Repository:
         try:
             file_path_for_student = os.path.join(dir_path,'students.txt')
             file_path_for_instructor = os.path.join(dir_path,'instructors.txt')
+            file_path_for_majors = os.path.join(dir_path,'majors.txt')
         except FileNotFoundError as error:
             print(f"File Not Found {error}")
         else:
             self.students = self.config_students(file_path_for_student) #Used dictionary instead of array to avoid duplication
             self.instructors = self.config_instructors(file_path_for_instructor)
+            self.majors = self.config_majors(file_path_for_majors)
             try:
                 self.process_grades(dir_path)
             except ValueError as v_er:
@@ -23,11 +26,12 @@ class Repository:
             else:
                 self.print_students_details()
                 self.print_instructore_details()
+                self.print_majors_details()
     
     def config_students(self,file_path_for_student):
         """ Creates Students from  students.txt """
         all_students = dict()
-        for row_data in self.file_reading_gen(file_path_for_student,3,"\t"):
+        for row_data in self.file_reading_gen(file_path_for_student,3,";",True):
             cwid, name, major = row_data
             all_students[cwid] = Student({"cwid":cwid, "name":name,"major":major})
         return all_students
@@ -35,7 +39,7 @@ class Repository:
     def config_instructors(self,file_path_for_instructor):
         """ Creates Instructors from  instructors.txt """
         all_instructors = dict()
-        for row_data in self.file_reading_gen(file_path_for_instructor,3,"\t"):
+        for row_data in self.file_reading_gen(file_path_for_instructor,3,"|",True):
             cwid, name, dept = row_data
             all_instructors[cwid] = Instructor({"cwid":cwid, "name":name,"dept":dept})
         return all_instructors
@@ -48,7 +52,7 @@ class Repository:
         except FileNotFoundError as error:
             print(f"File Not Found {error}")
         else: 
-            for student_id,course,grade,instructor_id in self.file_reading_gen(grades_path,4,"\t"):
+            for student_id,course,grade,instructor_id in self.file_reading_gen(grades_path,4,"|",True):
                 if student_id not in self.students:
                     raise ValueError('Invalid Student')
                 if instructor_id not in self.instructors:
@@ -57,6 +61,21 @@ class Repository:
                 student.add_course(course,grade)
                 instructor = self.instructors[instructor_id]
                 instructor.increement_student_for_course(course)
+
+
+    def config_majors(self,majors_path):
+        """ Process Majors """
+        majors = dict()
+        for major,flag,course in self.file_reading_gen(majors_path,3,"\t",True):
+            if major not in majors:
+                major_instance = Major(major)
+                majors[major] = major_instance
+            try:
+                major_instance.process_course(flag,course)
+            except ValueError as v_err:
+                print(v_err)
+        return majors
+
 
 
     def print_students_details(self):
@@ -72,6 +91,15 @@ class Repository:
         for student_id in self.students:
             student = self.students[student_id]
             row_info = student.get_summary()
+            row_infos.append(row_info)
+        return row_infos
+
+    def get_majors_details(self):
+        """ Creates majors info to add to PrettyTable """
+        row_infos = []
+        for major in self.majors:
+            major_instance = self.majors[major]
+            row_info = major_instance.get_summary()
             row_infos.append(row_info)
         return row_infos
 
@@ -91,6 +119,13 @@ class Repository:
         """ Prints Instructors Details in PrettyTable """
         table = PrettyTable(field_names=["CWID","Name","Dept", "Course","Students"])
         for row_info in self.get_instructors_details():
+            table.add_row(row_info)
+        print(table)
+
+    def print_majors_details(self):
+        """ Prints Majors Details in PrettyTable """
+        table = PrettyTable(field_names=["Major", "Required Courses", "Electives"])
+        for row_info in self.get_majors_details():
             table.add_row(row_info)
         print(table)
 
@@ -116,8 +151,7 @@ class Repository:
 
 def main():
     """ Main methods with Stevens Institute Processing """
-    stevens_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/TestOneStudent"
-    re = Repository(stevens_path)
-    print(re)
+    stevens_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/Stevens"
+    _ = Repository(stevens_path)
 
 main()
