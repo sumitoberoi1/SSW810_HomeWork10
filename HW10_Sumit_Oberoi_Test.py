@@ -11,10 +11,12 @@ class TestRepository(unittest.TestCase):
         repo = Repository(test_blank)
         self.assertEqual(len(repo.get_students_details()),0)
         self.assertEqual(repo.get_students_details(),[])
+        self.assertEqual(repo.get_majors_details(),[])
         test_one_student = "/Users/sumitoberoi/Documents/SSW-810/HW09/TestOneStudent"
         repo = Repository(test_one_student)
         self.assertEqual(len(repo.get_students_details()),1)
-        self.assertEqual(repo.get_students_details()[0],['10103', 'Baldwin, C', ['SSW 567']])
+        self.assertEqual(repo.get_majors_details(),[['SFEN', ['SSW 540'], ['CS 501']]])
+        self.assertEqual(repo.get_students_details()[0],['10103', 'Baldwin, C', 'SFEN', ['SSW 540'], None, ['CS 501']])
 
     def test_instructor_info(self):
         """Function to test instructors details """
@@ -25,7 +27,7 @@ class TestRepository(unittest.TestCase):
         test_one_student = "/Users/sumitoberoi/Documents/SSW-810/HW09/TestOneStudent"
         repo = Repository(test_one_student)
         self.assertEqual(len(repo.get_instructors_details()),1)
-        self.assertEqual(repo.get_instructors_details()[0],['98765', 'Einstein, A', 'SFEN', 'SSW 567', 1])
+        self.assertEqual(repo.get_instructors_details()[0],['98765', 'Einstein, A', 'SFEN', 'SSW 540', 1])
 
 
 

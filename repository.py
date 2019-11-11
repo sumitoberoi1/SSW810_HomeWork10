@@ -16,9 +16,12 @@ class Repository:
         except FileNotFoundError as error:
             print(f"File Not Found {error}")
         else:
-            self.students = self.config_students(file_path_for_student) #Used dictionary instead of array to avoid duplication
-            self.instructors = self.config_instructors(file_path_for_instructor)
             self.majors = self.config_majors(file_path_for_majors)
+            try:
+                self.students = self.config_students(file_path_for_student)
+            except ValueError as v_err:
+                print(v_err)
+            self.instructors = self.config_instructors(file_path_for_instructor)
             try:
                 self.process_grades(dir_path)
             except ValueError as v_er:
@@ -33,7 +36,9 @@ class Repository:
         all_students = dict()
         for row_data in self.file_reading_gen(file_path_for_student,3,";",True):
             cwid, name, major = row_data
-            all_students[cwid] = Student({"cwid":cwid, "name":name,"major":major})
+            if major not in self.majors:
+                raise ValueError('Invalid Student and Major Combo')
+            all_students[cwid] = Student({"cwid":cwid, "name":name,"major":self.majors[major]})
         return all_students
 
     def config_instructors(self,file_path_for_instructor):
@@ -76,11 +81,9 @@ class Repository:
                 print(v_err)
         return majors
 
-
-
     def print_students_details(self):
         """ Prints Students Details in PrettyTable """
-        table = PrettyTable(field_names=["CWID","Name","Completed Courses"])
+        table = PrettyTable(field_names=["CWID","Name","Major","Completed Courses","Remaining Required","Remaining Electives"])
         for row_info in self.get_students_details():
             table.add_row(row_info)
         print(table)
@@ -91,6 +94,7 @@ class Repository:
         for student_id in self.students:
             student = self.students[student_id]
             row_info = student.get_summary()
+            row_info += student.major.update_grade_according_to_student_courses(student.courses)
             row_infos.append(row_info)
         return row_infos
 
@@ -154,4 +158,3 @@ def main():
     stevens_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/Stevens"
     _ = Repository(stevens_path)
 
-main()
