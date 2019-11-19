@@ -1,14 +1,18 @@
 """ Repository class which contains details for a particular university like Stevens/NYU etc """
 import os
+import sqlite3
 from student import Student
 from instructor import Instructor
 from prettytable import PrettyTable
 from major import Major
 
+
 class Repository:
     """Repository class which contains details for a particular university like Stevens/NYU etc """
     def __init__(self,dir_path):
         """ Initializer which reads from file and creates Student, Instructor and process Grades """
+        self.students = []
+        self.instructors = []
         try:
             file_path_for_student = os.path.join(dir_path,'students.txt')
             file_path_for_instructor = os.path.join(dir_path,'instructors.txt')
@@ -28,13 +32,13 @@ class Repository:
                 print(v_er)
             else:
                 self.print_students_details()
-                self.print_instructore_details()
+                self.print_instructors_details()
                 self.print_majors_details()
     
     def config_students(self,file_path_for_student):
         """ Creates Students from  students.txt """
         all_students = dict()
-        for row_data in self.file_reading_gen(file_path_for_student,3,";",True):
+        for row_data in self.file_reading_gen(file_path_for_student,3,"\t",True):
             cwid, name, major = row_data
             if major not in self.majors:
                 raise ValueError('Invalid Student and Major Combo')
@@ -44,7 +48,7 @@ class Repository:
     def config_instructors(self,file_path_for_instructor):
         """ Creates Instructors from  instructors.txt """
         all_instructors = dict()
-        for row_data in self.file_reading_gen(file_path_for_instructor,3,"|",True):
+        for row_data in self.file_reading_gen(file_path_for_instructor,3,"\t",True):
             cwid, name, dept = row_data
             all_instructors[cwid] = Instructor({"cwid":cwid, "name":name,"dept":dept})
         return all_instructors
@@ -57,7 +61,7 @@ class Repository:
         except FileNotFoundError as error:
             print(f"File Not Found {error}")
         else: 
-            for student_id,course,grade,instructor_id in self.file_reading_gen(grades_path,4,"|",True):
+            for student_id,course,grade,instructor_id in self.file_reading_gen(grades_path,4,"\t",True):
                 if student_id not in self.students:
                     raise ValueError('Invalid Student')
                 if instructor_id not in self.instructors:
@@ -119,12 +123,17 @@ class Repository:
         return row_infos
         
 
-    def print_instructore_details(self):
+    def print_instructors_details(self,db_path = None):
         """ Prints Instructors Details in PrettyTable """
         table = PrettyTable(field_names=["CWID","Name","Dept", "Course","Students"])
-        for row_info in self.get_instructors_details():
-            table.add_row(row_info)
-        print(table)
+        if db_path is None:
+            for row_info in self.get_instructors_details():
+                table.add_row(row_info)
+            print(table)
+        else:
+            for row_info in self.get_instructors_details_from_db(db_path):
+                table.add_row(row_info)
+            print(table)
 
     def print_majors_details(self):
         """ Prints Majors Details in PrettyTable """
@@ -138,7 +147,7 @@ class Repository:
         try:
             file = open(path)
         except FileNotFoundError:
-            raise FileNotFoundError("Problem with reading file")
+            raise FileNotFoundError(f"Problem with reading file at path {path} ")
         else:
             with file:
                 for line in file:
@@ -153,9 +162,30 @@ class Repository:
                         else:
                             yield row_data
 
+    def get_instructors_details_from_db(self,db_path):
+        try:
+            db = sqlite3.connect(db_path)
+            row_infos = []
+            query = """SELECT instructors.CWID,instructors.Name,instructors.Dept, grades.Course, COUNT(*) as NUM_OF_STUDENTS
+                        FROM  instructors JOIN grades on CWID = InstructorCWID
+                        Group By instructors.CWID, Course"""
+            for row in db.execute(query):
+                row_infos.append(row)
+            db.close()
+            return row_infos
+        except sqlite3.OperationalError:
+            raise sqlite3.OperationalError(f"There is some problem with your database Path {db_path}")
+
+    def instructor_table_db(self, db_path):
+        """ Read data from database mentioned in db_path """
+        self.print_instructors_details(db_path)
+        
+
 def main():
     """ Main methods with Stevens Institute Processing """
     stevens_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/Stevens"
-    _ = Repository(stevens_path)
+    repo = Repository(stevens_path)
+    db_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/HW11.db"
+    repo.instructor_table_db(db_path)
 
-# main()
+main()
