@@ -34,7 +34,6 @@ class TestRepository(unittest.TestCase):
         dir_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/Stevens"
         db_path = "/Users/sumitoberoi/Documents/SSW-810/HW09/HW11.db"
         repo = Repository(dir_path)
-        print("Res",repo.get_instructors_details_from_db(db_path))
         res_expected = [(98762, 'Hawking, S', 'CS', 'CS 501', 1), 
         (98762, 'Hawking, S', 'CS', 'CS 546', 1),
          (98762, 'Hawking, S', 'CS', 'CS 570', 1), (98763, 'Rowland, J', 'SFEN', 'SSW 555', 1),
