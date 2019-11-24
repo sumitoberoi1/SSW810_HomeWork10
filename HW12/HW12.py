@@ -22,8 +22,8 @@ def main():
         print(row_infos)
         return render_template(
             "instructor.html",
-            title="Stevens Repository",
-            table_title="Courses and Students Count",
+            heading="Stevens Repository",
+            sub_heading="Courses and Students Count",
             instructors=row_infos
         )
 
